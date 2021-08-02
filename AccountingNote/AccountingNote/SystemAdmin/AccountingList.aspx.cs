@@ -1,4 +1,5 @@
-﻿using AccountingNote.DBSource;
+﻿using AccountingNote.Auth;
+using AccountingNote.DBSource;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -9,26 +10,26 @@ using System.Web.UI;
 using System.Web.UI.WebControls;
 
 namespace AccountingNote.SystemAdmin
-{
+{ 
     public partial class AccountingList : System.Web.UI.Page
     {
         protected void Page_Load(object sender, EventArgs e)
         {
-            if(this.Session["UserLoginInfo"] == null)
+            //if(this.Session["UserLoginInfo"] == null)
+            if(!AuthManager.IsLogined())
             {
                 Response.Redirect("/Login.aspx");
                 return;
             }
 
-            string account = this.Session["UserLoginInfo"] as string;
-            var dr = UserInfoManager.GetUserInfoByAccount(account);
+            var currentUser = AuthManager.GetCurrentUser();
 
-            if (dr == null)
+            if (currentUser == null)
             {
                 Response.Redirect("/Login.aspx");
                 return;
             }
-            var dt = AccountingManager.GetAccountingList(dr["ID"].ToString());
+            var dt = AccountingManager.GetAccountingList(currentUser.ID);
             
             if(dt.Rows.Count > 0)
             {

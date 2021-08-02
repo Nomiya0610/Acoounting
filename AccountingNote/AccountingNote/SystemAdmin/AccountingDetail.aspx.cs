@@ -1,10 +1,13 @@
-﻿using AccountingNote.DBSource;
+﻿using AccountingNote.Auth;
+using AccountingNote.DBSource;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Web;
 using System.Web.UI;
 using System.Web.UI.WebControls;
+using System.Data;
+
 
 namespace AccountingNote.SystemAdmin
 {
@@ -12,17 +15,18 @@ namespace AccountingNote.SystemAdmin
     {
         protected void Page_Load(object sender, EventArgs e)
         {
-            if (this.Session["UserLoginInfo"] == null)
+            if (!AuthManager.IsLogined())
             {
                 Response.Redirect("/Login.aspx");
                 return;
             }
 
             string account = this.Session["UserLoginInfo"] as string;
-            var drUserInfo = UserInfoManager.GetUserInfoByAccount(account);
+            var currentUser = AuthManager.GetCurrentUser();
 
-            if (drUserInfo == null)
+            if (currentUser == null)
             {
+                this.Session["UserLoginInfo"] = null;
                 Response.Redirect("/Login.aspx");
                 return;
             }
@@ -42,7 +46,7 @@ namespace AccountingNote.SystemAdmin
                     int id;
                     if (int.TryParse(idText, out id))
                     {
-                        var drAccounting = AccountingManager.GetAccounting(id, drUserInfo["ID"].ToString());
+                        var drAccounting = AccountingManager.GetAccounting(id, currentUser.ID);
 
                         if (drAccounting == null)
                         {
@@ -79,17 +83,14 @@ namespace AccountingNote.SystemAdmin
             }
 
 
-
-            string account = this.Session["UserLoginInfo"] as string;
-            var dr = UserInfoManager.GetUserInfoByAccount(account);
-
-            if (dr == null)
-            {
+            UserInfoModel currentUser = AuthManager.GetCurrentUser();
+            if(currentUser == null)
+            { 
                 Response.Redirect("/Login.aspx");
                 return;
             }
 
-            string userID = dr["ID"].ToString();
+            string userID = currentUser.ID;
             string actTypeText = this.ddActType.SelectedValue;
             string amountText = this.txtAmount.Text;
             string caption = this.txtCaption.Text;
@@ -101,6 +102,7 @@ namespace AccountingNote.SystemAdmin
             string idText = this.Request.QueryString["ID"];
             if(string.IsNullOrWhiteSpace(idText))
             {
+                //Execute 'Insert into db'
                  AccountingManager.CreateAccounting(userID, caption, amount, actType, body);
             }
             else
@@ -108,6 +110,7 @@ namespace AccountingNote.SystemAdmin
                 int id;
                 if(int.TryParse(idText,out id))
                 {
+                    //Execute 'Update db'
                     AccountingManager.UpdateAccounting(id, userID, caption, amount, actType, body);
                 }
             }
